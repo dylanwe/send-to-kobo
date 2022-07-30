@@ -349,10 +349,17 @@ router.get('/', async ctx => {
 app.use(router.routes())
 app.use(router.allowedMethods())
 
-fs.rm('uploads', {recursive: true}, (err) => {
-  if (err) throw err
+if (fs.existsSync('./uploads')) {
+  fs.rm('uploads', {recursive: true}, (err) => {
+    if (err) throw err
+    mkdirp('uploads').then (() => {
+      app.listen(port)
+      console.log('server is listening on port ' + port)
+    })
+  })
+} else {
   mkdirp('uploads').then (() => {
     app.listen(port)
     console.log('server is listening on port ' + port)
   })
-})
+}

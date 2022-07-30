@@ -1,13 +1,13 @@
-const Koa = require('koa');
-const Router = require('@koa/router');
-const multer = require('@koa/multer');
-const logger = require('koa-logger');
-const sendfile = require('koa-sendfile');
-const mkdirp = require('mkdirp');
-const fs = require('fs');
-const { spawn } = require('child_process');
-const { extname, basename, dirname } = require('path');
-const FileType = require('file-type');
+import Koa from 'koa';
+import Router from '@koa/router';
+import multer from '@koa/multer';
+import logger from 'koa-logger';
+import sendfile from 'koa-sendfile';
+import mkdirp from 'mkdirp';
+import { unlink, existsSync, rm } from 'fs';
+import { spawn } from 'child_process';
+import { extname, basename, dirname } from 'path';
+import filteType from 'file-type';
 
 const app = new Koa();
 const router = new Router();
@@ -61,7 +61,7 @@ const removeKey = (key) => {
         clearTimeout(app.context.keys.get(key).timer);
         if (info.file) {
             console.log('Deleting file', info.file.path);
-            fs.unlink(info.file.path, (err) => {
+            unlink(info.file.path, (err) => {
                 if (err) console.error(err);
             });
             info.file = null;
@@ -208,7 +208,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
         });
         ctx.redirect('back', '/');
         if (ctx.request.file) {
-            fs.unlink(ctx.request.file.path, (err) => {
+            unlink(ctx.request.file.path, (err) => {
                 if (err) console.error(err);
                 else console.log('Removed file', ctx.request.file.path);
             });
@@ -224,7 +224,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
         });
         ctx.redirect('back', '/');
         if (ctx.request.file) {
-            fs.unlink(ctx.request.file.path, (err) => {
+            unlink(ctx.request.file.path, (err) => {
                 if (err) console.error(err);
                 else console.log('Removed file', ctx.request.file.path);
             });
@@ -234,7 +234,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
 
     const mimetype = ctx.request.file.mimetype;
 
-    const type = await FileType.fromFile(ctx.request.file.path);
+    const type = await filteType.fromFile(ctx.request.file.path);
 
     if (!type || !allowedTypes.includes(type.mime)) {
         flash(ctx, {
@@ -248,7 +248,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
             key: key,
         });
         ctx.redirect('back', '/');
-        fs.unlink(ctx.request.file.path, (err) => {
+        unlink(ctx.request.file.path, (err) => {
             if (err) console.error(err);
             else console.log('Removed file', ctx.request.file.path);
         });
@@ -286,11 +286,11 @@ router.post('/upload', upload.single('file'), async (ctx) => {
                 }
             );
             kindlegen.once('close', (code) => {
-                fs.unlink(ctx.request.file.path, (err) => {
+                unlink(ctx.request.file.path, (err) => {
                     if (err) console.error(err);
                     else console.log('Removed file', ctx.request.file.path);
                 });
-                fs.unlink(
+                unlink(
                     ctx.request.file.path.replace(/\.epub$/i, '.mobi8'),
                     (err) => {
                         if (err) console.error(err);
@@ -342,7 +342,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
                 }
             );
             kepubify.once('close', (code) => {
-                fs.unlink(ctx.request.file.path, (err) => {
+                unlink(ctx.request.file.path, (err) => {
                     if (err) console.error(err);
                     else console.log('Removed file', ctx.request.file.path);
                 });
@@ -362,7 +362,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
     expireKey(key);
     if (info.file && info.file.path) {
         await new Promise((resolve, reject) =>
-            fs.unlink(info.file.path, (err) => {
+            unlink(info.file.path, (err) => {
                 if (err) return reject(err);
                 else
                     console.log(
@@ -467,8 +467,8 @@ const startApp = () => {
 };
 
 // Check if upload folder exists
-if (fs.existsSync('./uploads')) {
-    fs.rm('uploads', { recursive: true }, (err) => {
+if (existsSync('./uploads')) {
+    rm('uploads', { recursive: true }, (err) => {
         if (err) throw err;
         mkdirp('uploads').then(() => {
             startApp();

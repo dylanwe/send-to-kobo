@@ -33,7 +33,7 @@ const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt']
 const keyChars = '3469ACEGHLMNPRTY'
 const keyLength = 4
 
-function randomKey() {
+const randomKey = () => {
     const choices = Math.pow(keyChars.length, keyLength)
     const rnd = Math.floor(Math.random() * choices)
 
@@ -47,7 +47,7 @@ function randomKey() {
         .join('')
 }
 
-function removeKey(key) {
+const removeKey = (key) => {
     console.log('Removing expired key', key)
     const info = app.context.keys.get(key)
     if (info) {
@@ -65,7 +65,7 @@ function removeKey(key) {
     }
 }
 
-function expireKey(key) {
+const expireKey = (key) => {
     // console.log('key', key, 'will expire in', expireDelay, 'seconds')
     const info = app.context.keys.get(key)
     const timer = setTimeout(removeKey, expireDelay * 1000, key)
@@ -77,7 +77,7 @@ function expireKey(key) {
     return timer
 }
 
-function flash(ctx, data) {
+const flash = (ctx, data) => {
     console.log(data)
     ctx.cookies.set('flash', encodeURIComponent(JSON.stringify(data)), {
         overwrite: true,
@@ -93,10 +93,10 @@ const router = new Router()
 
 const upload = multer({
     storage: multer.diskStorage({
-        destination: function (req, file, cb) {
+        destination: (req, file, cb) => {
             cb(null, 'uploads')
         },
-        filename: function (req, file, cb) {
+        filename: (req, file, cb) => {
             const uniqueSuffix =
                 Date.now() + '-' + Math.floor(Math.random() * 1e9)
             cb(

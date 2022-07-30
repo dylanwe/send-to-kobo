@@ -9,6 +9,13 @@ const { spawn } = require('child_process')
 const { extname, basename, dirname } = require('path')
 const FileType = require('file-type')
 
+const app = new Koa()
+const router = new Router()
+app.context.keys = new Map()
+app.use(logger())
+app.use(router.routes())
+app.use(router.allowedMethods())
+
 const port = 3001
 const expireDelay = 30 // 30 seconds
 const maxExpireDuration = 1 * 60 * 60 // 1 hour
@@ -84,12 +91,6 @@ const flash = (ctx, data) => {
         httpOnly: false,
     })
 }
-
-const app = new Koa()
-app.context.keys = new Map()
-app.use(logger())
-
-const router = new Router()
 
 const upload = multer({
     storage: multer.diskStorage({
@@ -454,15 +455,12 @@ router.get('/', async (ctx) => {
     )
 })
 
-app.use(router.routes())
-app.use(router.allowedMethods())
-
 /**
  * Start the app
  */
 const startApp = () => {
     app.listen(port)
-    console.log('server is listening on port ' + port)
+    console.log(`server is listening on port http://localhost:${port}`)
 }
 
 // Check if upload folder exists

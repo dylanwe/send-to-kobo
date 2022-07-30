@@ -349,17 +349,24 @@ router.get('/', async ctx => {
 app.use(router.routes())
 app.use(router.allowedMethods())
 
+/**
+ * Start the app
+ */
+const startApp = () => {
+  app.listen(port)
+  console.log('server is listening on port ' + port)
+}
+
+// Check if upload folder exists
 if (fs.existsSync('./uploads')) {
   fs.rm('uploads', {recursive: true}, (err) => {
     if (err) throw err
     mkdirp('uploads').then (() => {
-      app.listen(port)
-      console.log('server is listening on port ' + port)
+      startApp()
     })
   })
 } else {
   mkdirp('uploads').then (() => {
-    app.listen(port)
-    console.log('server is listening on port ' + port)
+    startApp()
   })
 }

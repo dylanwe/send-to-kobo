@@ -1,5 +1,5 @@
 import Koa from 'koa';
-import serve from "koa-static";
+import serve from 'koa-static';
 import Router from '@koa/router';
 import multer from '@koa/multer';
 import logger from 'koa-logger';
@@ -8,19 +8,18 @@ import mkdirp from 'mkdirp';
 import { unlink, existsSync, rm } from 'fs';
 import { spawn } from 'child_process';
 import { extname, basename, dirname } from 'path';
-import { generateRandomKey, removeKey, expireKey } from "./utils/key";
+import { generateRandomKey, removeKey, expireKey } from './utils/key.js';
 import filteType from 'file-type';
 
 const app = new Koa();
 const router = new Router();
 app.context.keys = new Map();
-app.use(serve('./static'))
+app.use(serve('./static'));
 app.use(logger());
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 const port = 3000;
-const expireDelay = 30; // 30 seconds
 const maxExpireDuration = 1 * 60 * 60; // 1 hour
 const maxFileSize = 1024 * 1024 * 800; // 800 MB
 
@@ -42,8 +41,8 @@ const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
 
 /**
  * Send a flash message
- * 
- * @param {*} ctx context of the user 
+ *
+ * @param {*} ctx context of the user
  * @param {JSON} data the data to send in the message
  */
 const flash = (ctx, data) => {
@@ -131,10 +130,10 @@ router.post('/generate', async (ctx) => {
         file: null,
     };
     ctx.keys.set(key, info);
-    expireKey(key);
+    expireKey(key, app.context);
     setTimeout(() => {
         // remove if it is the same object
-        if (ctx.keys.get(key) === info) removeKey(key);
+        if (ctx.keys.get(key) === info) removeKey(key, app.context);
     }, maxExpireDuration * 1000);
 
     ctx.body = key;
@@ -156,7 +155,7 @@ router.get('/download/:key', async (ctx) => {
         );
         return;
     }
-    expireKey(key);
+    expireKey(key, app.context);
     console.log('Sending file', info.file.path);
     await sendfile(ctx, info.file.path);
     ctx.attachment(info.file.name);
@@ -225,7 +224,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
     }
 
     const info = ctx.keys.get(key);
-    expireKey(key);
+    expireKey(key, app.context);
 
     let data = null;
     let filename = ctx.request.file.originalname;
@@ -328,7 +327,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
         data = ctx.request.file.path;
     }
 
-    expireKey(key);
+    expireKey(key, app.context);
     if (info.file && info.file.path) {
         await new Promise((resolve, reject) =>
             unlink(info.file.path, (err) => {
@@ -398,7 +397,7 @@ router.get('/status/:key', async (ctx) => {
         );
         return;
     }
-    expireKey(key);
+    expireKey(key, app.context);
     ctx.body = {
         alive: info.alive,
         file: info.file

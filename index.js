@@ -1,16 +1,15 @@
-import Koa from 'koa';
-import serve from 'koa-static';
-import render from "koa-ejs";
-import Router from '@koa/router';
 import multer from '@koa/multer';
+import Router from '@koa/router';
+import { existsSync, rm } from 'fs';
+import Koa from 'koa';
+import render from "koa-ejs";
 import logger from 'koa-logger';
 import sendfile from 'koa-sendfile';
+import serve from 'koa-static';
 import mkdirp from 'mkdirp';
-import { unlink, existsSync, rm } from 'fs';
-import { spawn } from 'child_process';
-import path, { extname, basename, dirname } from 'path';
-import { generateRandomKey, removeKey, expireKey } from './utils/key.js';
-import filteType from 'file-type';
+import path, { extname } from 'path';
+import { expireKey, generateRandomKey, removeKey } from './controllers/key.js';
+import { uploadToFolder } from './controllers/upload.js';
 
 export const app = new Koa();
 const router = new Router();
@@ -32,6 +31,8 @@ const port = 3000;
 const maxExpireDuration = 1 * 60 * 60; // 1 hour
 const maxFileSize = 1024 * 1024 * 800; // 800 MB
 
+const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
+
 const TYPE_EPUB = 'application/epub+zip';
 const TYPE_MOBI = 'application/x-mobipocket-ebook';
 
@@ -46,22 +47,6 @@ const allowedTypes = [
     'application/zip',
     'application/x-rar-compressed',
 ];
-const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
-
-/**
- * Send a flash message
- *
- * @param {*} ctx context of the user
- * @param {JSON} data the data to send in the message
- */
-const flash = (ctx, data) => {
-    console.log(data);
-
-    ctx.cookies.set('flash', encodeURIComponent(JSON.stringify(data)), {
-        overwrite: true,
-        httpOnly: false,
-    });
-};
 
 /**
  * Upload a file to the uploads folder
@@ -172,209 +157,7 @@ router.get('/download/:key', async (ctx) => {
 
 // Upload a file to the uploads folder
 router.post('/upload', upload.single('file'), async (ctx) => {
-    const key = ctx.request.body.key.toUpperCase();
-
-    if (ctx.request.file) {
-        console.log('Uploaded file:', ctx.request.file);
-    }
-
-    if (!ctx.keys.has(key)) {
-        flash(ctx, {
-            message: 'Unknown key ' + key,
-            success: false,
-        });
-        ctx.redirect('back', '/');
-        if (ctx.request.file) {
-            unlink(ctx.request.file.path, (err) => {
-                if (err) console.error(err);
-                else console.log('Removed file', ctx.request.file.path);
-            });
-        }
-        return;
-    }
-
-    if (!ctx.request.file || ctx.request.file.size === 0) {
-        flash(ctx, {
-            message: 'Invalid file submitted',
-            success: false,
-            key: key,
-        });
-        ctx.redirect('back', '/');
-        if (ctx.request.file) {
-            unlink(ctx.request.file.path, (err) => {
-                if (err) console.error(err);
-                else console.log('Removed file', ctx.request.file.path);
-            });
-        }
-        return;
-    }
-
-    const mimetype = ctx.request.file.mimetype;
-
-    const type = await filteType.fromFile(ctx.request.file.path);
-
-    if (!type || !allowedTypes.includes(type.mime)) {
-        flash(ctx, {
-            message:
-                'Uploaded file is of an invalid type: ' +
-                ctx.request.file.originalname +
-                ' (' +
-                (type ? type.mime : 'unknown mimetype') +
-                ')',
-            success: false,
-            key: key,
-        });
-        ctx.redirect('back', '/');
-        unlink(ctx.request.file.path, (err) => {
-            if (err) console.error(err);
-            else console.log('Removed file', ctx.request.file.path);
-        });
-        return;
-    }
-
-    const info = ctx.keys.get(key);
-    expireKey(key, app.context);
-
-    let data = null;
-    let filename = ctx.request.file.originalname;
-    let conversion = null;
-
-    if (mimetype === TYPE_EPUB && info.agent.includes('Kindle')) {
-        // convert to .mobi
-        conversion = 'kindlegen';
-        const outname = ctx.request.file.path.replace(/\.epub$/i, '.mobi');
-        filename = filename
-            .replace(/\.kepub\.epub$/i, '.epub')
-            .replace(/\.epub$/i, '.mobi');
-
-        data = await new Promise((resolve, reject) => {
-            const kindlegen = spawn(
-                'kindlegen',
-                [
-                    basename(ctx.request.file.path),
-                    '-dont_append_source',
-                    '-c1',
-                    '-o',
-                    basename(outname),
-                ],
-                {
-                    stdio: 'inherit',
-                    cwd: dirname(ctx.request.file.path),
-                }
-            );
-            kindlegen.once('close', (code) => {
-                unlink(ctx.request.file.path, (err) => {
-                    if (err) console.error(err);
-                    else console.log('Removed file', ctx.request.file.path);
-                });
-                unlink(
-                    ctx.request.file.path.replace(/\.epub$/i, '.mobi8'),
-                    (err) => {
-                        if (err) console.error(err);
-                        else
-                            console.log(
-                                'Removed file',
-                                ctx.request.file.path.replace(
-                                    /\.epub$/i,
-                                    '.mobi8'
-                                )
-                            );
-                    }
-                );
-                if (code !== 0) {
-                    console.warn('kindlegen error code ' + code);
-                }
-
-                resolve(outname);
-            });
-        });
-    } else if (
-        mimetype === TYPE_EPUB &&
-        info.agent.includes('Kobo') &&
-        ctx.request.body.kepubify
-    ) {
-        // convert to Kobo EPUB
-        conversion = 'kepubify';
-        const outname = ctx.request.file.path.replace(
-            /\.epub$/i,
-            '.kepub.epub'
-        );
-        filename = filename
-            .replace(/\.kepub\.epub$/i, '.epub')
-            .replace(/\.epub$/i, '.kepub.epub');
-
-        data = await new Promise((resolve, reject) => {
-            const kepubify = spawn(
-                'kepubify',
-                [
-                    '-v',
-                    '-u',
-                    '-o',
-                    basename(outname),
-                    basename(ctx.request.file.path),
-                ],
-                {
-                    stdio: 'inherit',
-                    cwd: dirname(ctx.request.file.path),
-                }
-            );
-            kepubify.once('close', (code) => {
-                unlink(ctx.request.file.path, (err) => {
-                    if (err) console.error(err);
-                    else console.log('Removed file', ctx.request.file.path);
-                });
-                if (code !== 0) {
-                    reject('kepubify error code ' + code);
-                    return;
-                }
-
-                resolve(outname);
-            });
-        });
-    } else {
-        // No conversion
-        data = ctx.request.file.path;
-    }
-
-    expireKey(key, app.context);
-    if (info.file && info.file.path) {
-        await new Promise((resolve, reject) =>
-            unlink(info.file.path, (err) => {
-                if (err) return reject(err);
-                else
-                    console.log(
-                        'Removed previously uploaded file',
-                        info.file.path
-                    );
-                resolve();
-            })
-        );
-    }
-    info.file = {
-        name: filename,
-        path: data,
-        // size: ctx.request.file.size,
-        uploaded: new Date(),
-    };
-
-    flash(ctx, {
-        message:
-            'Upload successful!<br/>' +
-            (conversion
-                ? ' Ebook was converted with ' + conversion + ' and sent'
-                : ' Sent') +
-            ' to ' +
-            (info.agent.includes('Kobo')
-                ? 'a Kobo device.'
-                : info.agent.includes('Kindle')
-                ? 'a Kindle device.'
-                : 'a device.') +
-            '<br/>Filename: ' +
-            filename,
-        success: true,
-        key: key,
-    });
-    ctx.redirect('back', '/');
+    await uploadToFolder(ctx);
 });
 
 // delete a file with the given key

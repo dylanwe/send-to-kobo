@@ -1,4 +1,5 @@
 import Koa from 'koa';
+import serve from "koa-static";
 import Router from '@koa/router';
 import multer from '@koa/multer';
 import logger from 'koa-logger';
@@ -12,6 +13,7 @@ import filteType from 'file-type';
 const app = new Koa();
 const router = new Router();
 app.context.keys = new Map();
+app.use(serve('./static'))
 app.use(logger());
 app.use(router.routes());
 app.use(router.allowedMethods());
@@ -463,11 +465,6 @@ router.get('/status/:key', async (ctx) => {
               }
             : null,
     };
-});
-
-// Render the styles
-router.get('/style.css', async (ctx) => {
-    await sendfile(ctx, 'style.css');
 });
 
 // Render the download page

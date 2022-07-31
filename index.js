@@ -75,26 +75,44 @@ const removeKey = (key) => {
     }
 };
 
+/**
+ * Expire the key
+ * 
+ * @param {string} key the session key of 4 charachters
+ * @returns the expiration timer
+ */
 const expireKey = (key) => {
-    // console.log('key', key, 'will expire in', expireDelay, 'seconds')
+    console.log('key', key, 'will expire in', expireDelay, 'seconds');
     const info = app.context.keys.get(key);
     const timer = setTimeout(removeKey, expireDelay * 1000, key);
+
     if (info) {
         clearTimeout(info.timer);
         info.timer = timer;
         info.alive = new Date();
     }
+
     return timer;
 };
 
+/**
+ * Send a flash message
+ * 
+ * @param {*} ctx context of the user 
+ * @param {JSON} data the data to send in the message
+ */
 const flash = (ctx, data) => {
     console.log(data);
+
     ctx.cookies.set('flash', encodeURIComponent(JSON.stringify(data)), {
         overwrite: true,
         httpOnly: false,
     });
 };
 
+/**
+ * Upload a file to the uploads folder
+ */
 const upload = multer({
     storage: multer.diskStorage({
         destination: (req, file, cb) => {
@@ -138,6 +156,7 @@ const upload = multer({
     },
 });
 
+// Generate a new key
 router.post('/generate', async (ctx) => {
     const agent = ctx.get('user-agent');
 
@@ -176,6 +195,7 @@ router.post('/generate', async (ctx) => {
     ctx.body = key;
 });
 
+// Download a file with the given key
 router.get('/download/:key', async (ctx) => {
     const key = ctx.params.key.toUpperCase();
     const info = ctx.keys.get(key);
@@ -197,6 +217,7 @@ router.get('/download/:key', async (ctx) => {
     ctx.attachment(info.file.name);
 });
 
+// Upload a file to the uploads folder
 router.post('/upload', upload.single('file'), async (ctx) => {
     const key = ctx.request.body.key.toUpperCase();
 
@@ -403,6 +424,7 @@ router.post('/upload', upload.single('file'), async (ctx) => {
     ctx.redirect('back', '/');
 });
 
+// delete a file with the given key
 router.delete('/file/:key', async (ctx) => {
     const key = ctx.params.key.toUpperCase();
     const info = ctx.keys.get(key);
@@ -413,6 +435,7 @@ router.delete('/file/:key', async (ctx) => {
     ctx.body = 'ok';
 });
 
+// Get the status of the key
 router.get('/status/:key', async (ctx) => {
     const key = ctx.params.key.toUpperCase();
     const info = ctx.keys.get(key);
@@ -442,14 +465,17 @@ router.get('/status/:key', async (ctx) => {
     };
 });
 
+// Render the styles
 router.get('/style.css', async (ctx) => {
     await sendfile(ctx, 'style.css');
 });
 
+// Render the download page
 router.get('/receive', async (ctx) => {
     await sendfile(ctx, 'download.html');
 });
 
+// Render the homepage depending on what device the user is using
 router.get('/', async (ctx) => {
     const agent = ctx.get('user-agent');
     console.log(ctx.ip, agent);

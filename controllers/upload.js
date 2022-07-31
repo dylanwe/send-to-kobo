@@ -36,7 +36,76 @@ const flash = (ctx, data) => {
 };
 
 /**
- * Convert the uploaded book to kepub
+ * Convert the uploaded book to .mobi
+ * 
+ * @param {*} ctx router
+ * @param {*} filename the name of the file
+ * @returns data of convertion
+ */
+const convertToMobi = async (ctx, filename) => {
+    const returnValues = {
+        conversion: '',
+        filename,
+        data: null
+    }
+
+    returnValues.conversion = 'kindlegen';
+    const outname = ctx.request.file.path.replace(/\.epub$/i, '.mobi');
+    returnValues.filename = filename
+        .replace(/\.kepub\.epub$/i, '.epub')
+        .replace(/\.epub$/i, '.mobi');
+
+        returnValues.data = await new Promise((resolve, reject) => {
+        const kindlegen = spawn(
+            'kindlegen',
+            [
+                basename(ctx.request.file.path),
+                '-dont_append_source',
+                '-c1',
+                '-o',
+                basename(outname),
+            ],
+            {
+                stdio: 'inherit',
+                cwd: dirname(ctx.request.file.path),
+            }
+        );
+        kindlegen.once('close', (code) => {
+            unlink(ctx.request.file.path, (err) => {
+                if (err)
+                    console.error(err);
+                else
+                    console.log('Removed file', ctx.request.file.path);
+            });
+            unlink(
+                ctx.request.file.path.replace(/\.epub$/i, '.mobi8'),
+                (err) => {
+                    if (err)
+                        console.error(err);
+
+                    else
+                        console.log(
+                            'Removed file',
+                            ctx.request.file.path.replace(
+                                /\.epub$/i,
+                                '.mobi8'
+                            )
+                        );
+                }
+            );
+            if (code !== 0) {
+                console.warn('kindlegen error code ' + code);
+            }
+
+            resolve(outname);
+        });
+    });
+
+    return returnValues;
+}
+
+/**
+ * Convert the uploaded book to .kepub
  * 
  * @param {*} ctx router
  * @param {*} filename the name of the file
@@ -166,53 +235,10 @@ export const uploadToFolder = async (ctx) => {
 
     if (mimetype === TYPE_EPUB && info.agent.includes('Kindle')) {
         // convert to .mobi
-        conversion = 'kindlegen';
-        const outname = ctx.request.file.path.replace(/\.epub$/i, '.mobi');
-        filename = filename
-            .replace(/\.kepub\.epub$/i, '.epub')
-            .replace(/\.epub$/i, '.mobi');
-
-        data = await new Promise((resolve, reject) => {
-            const kindlegen = spawn(
-                'kindlegen',
-                [
-                    basename(ctx.request.file.path),
-                    '-dont_append_source',
-                    '-c1',
-                    '-o',
-                    basename(outname),
-                ],
-                {
-                    stdio: 'inherit',
-                    cwd: dirname(ctx.request.file.path),
-                }
-            );
-            kindlegen.once('close', (code) => {
-                unlink(ctx.request.file.path, (err) => {
-                    if (err) console.error(err);
-                    else console.log('Removed file', ctx.request.file.path);
-                });
-                unlink(
-                    ctx.request.file.path.replace(/\.epub$/i, '.mobi8'),
-                    (err) => {
-                        if (err) console.error(err);
-                        else
-                            console.log(
-                                'Removed file',
-                                ctx.request.file.path.replace(
-                                    /\.epub$/i,
-                                    '.mobi8'
-                                )
-                            );
-                    }
-                );
-                if (code !== 0) {
-                    console.warn('kindlegen error code ' + code);
-                }
-
-                resolve(outname);
-            });
-        });
+        const convertionData = await convertToMobi(ctx, filename);
+        conversion = convertionData.conversion;
+        filename = convertionData.filename;
+        data = convertionData.data;
     } else if (
         mimetype === TYPE_EPUB &&
         info.agent.includes('Kobo') &&

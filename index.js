@@ -472,7 +472,7 @@ router.get('/style.css', async (ctx) => {
 
 // Render the download page
 router.get('/receive', async (ctx) => {
-    await sendfile(ctx, 'download.html');
+    await sendfile(ctx, 'views/download.html');
 });
 
 // Render the homepage depending on what device the user is using
@@ -482,8 +482,8 @@ router.get('/', async (ctx) => {
     await sendfile(
         ctx,
         agent.includes('Kobo') || agent.includes('Kindle')
-            ? 'download.html'
-            : 'upload.html'
+            ? 'views/download.html'
+            : 'views/upload.html'
     );
 });
 

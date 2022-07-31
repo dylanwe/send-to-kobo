@@ -1,31 +1,32 @@
 <!doctype html>
 <html>
+
 <head>
-	<%- include('./partials/head')  %> 
+	<%- include('./partials/head') %>
+	<script src="./js/download.js" defer></script>
 </head>
+
 <body>
 
-<div class="wrapper">
-	<div class="jumbotron">
-		<h1 class="display-4">Send to Kobo/Kindle</h1>
+	<div class="container">
+		<div class="jumbotron mt-5">
+			<h1 class="display-4 text-center">Send to Kobo/Kindle</h1>
+		</div>
+
+		<div class="text-center">
+			<div id="key" class="display-2 text-monospace">----</div>
+			<div>Unique key</div>
+			<br />
+			<button id="keygen" class="btn btn-lg btn-primary mt-4">Generate new key</button>
+		</div>
+		<br />
+		<hr />
+		<br />
+		<div class="text-center" id="downloads">
+			<a id="downloadlink"></a>
+		</div>
 	</div>
 
-	<h1 class="center">Send to Kobo/Kindle test</h1>
-
-	<div class="center">
-		<div style="font-size: 1.4em;">Unique key:</div>
-		<div id="key">----</div>
-		<br/>
-		<button id="keygen">Generate new key</button>
-	</div>
-	<br/>
-	<hr/>
-	<br/>
-	<div class="center" id="downloads">
-		<a id="downloadlink"></a>
-	</div>
-</div>
-
-<script src="./js/download.js"></script>
 </body>
+
 </html>

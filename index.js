@@ -11,7 +11,7 @@ import { extname, basename, dirname } from 'path';
 import { generateRandomKey, removeKey, expireKey } from './utils/key.js';
 import filteType from 'file-type';
 
-const app = new Koa();
+export const app = new Koa();
 const router = new Router();
 app.context.keys = new Map();
 app.use(serve('./static'));

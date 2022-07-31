@@ -1,3 +1,5 @@
+import { app } from "./../index.js";
+
 const expireDelay = 30; // 30 seconds delay before a key expires
 
 /**
@@ -22,13 +24,12 @@ export const generateRandomKey = () => {
  * Remove a key
  *
  * @param {string} key the key to remove
- * @param {*} appContext the context of the Koa app
  */
-export const removeKey = (key, appContext) => {
+export const removeKey = (key) => {
     console.log('Removing expired key', key);
-    const info = appContext.keys.get(key);
+    const info = app.context.keys.get(key);
     if (info) {
-        clearTimeout(appContext.keys.get(key).timer);
+        clearTimeout(app.context.keys.get(key).timer);
         if (info.file) {
             console.log('Deleting file', info.file.path);
             unlink(info.file.path, (err) => {
@@ -36,7 +37,7 @@ export const removeKey = (key, appContext) => {
             });
             info.file = null;
         }
-        appContext.keys.delete(key);
+        app.context.keys.delete(key);
     } else {
         console.log('Tried to remove non-existing key', key);
     }
@@ -46,12 +47,11 @@ export const removeKey = (key, appContext) => {
  * Expire the key
  *
  * @param {string} key the session key of 4 charachters
- * @param {*} appContext the context of the Koa app
  * @returns the expiration timer
  */
-export const expireKey = (key, appContext) => {
+export const expireKey = (key) => {
     console.log('key', key, 'will expire in', expireDelay, 'seconds');
-    const info = appContext.keys.get(key);
+    const info = app.context.keys.get(key);
     const timer = setTimeout(removeKey, expireDelay * 1000, key);
 
     if (info) {

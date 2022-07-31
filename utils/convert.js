@@ -3,118 +3,97 @@ import { unlink } from 'fs';
 import { basename, dirname } from 'path';
 
 /**
- * Convert the uploaded book to .mobi
- *
+ * Convert a book to another format
+ * 
+ * @param {string} conversion what conversion command to run
  * @param {*} ctx router
- * @param {*} filename the name of the file
- * @returns data of convertion
+ * @param {string} filename the name of the file
+ * @returns data of conversion
  */
-export const convertToMobi = async (ctx, filename) => {
+const convertWith = async (conversion, ctx, filename) => {
     const returnValues = {
-        conversion: '',
+        conversion,
         filename,
         data: null,
     };
 
-    returnValues.conversion = 'kindlegen';
-    const outname = ctx.request.file.path.replace(/\.epub$/i, '.mobi');
-    returnValues.filename = filename
-        .replace(/\.kepub\.epub$/i, '.epub')
-        .replace(/\.epub$/i, '.mobi');
-
-    returnValues.data = await new Promise((resolve, reject) => {
-        const kindlegen = spawn(
-            'kindlegen',
-            [
+    // commands to run for converters
+    const conversionCommands = {
+        kindlegen: {
+            name: 'kindlegen',
+            commands: [
                 basename(ctx.request.file.path),
                 '-dont_append_source',
                 '-c1',
                 '-o',
                 basename(outname),
             ],
-            {
-                stdio: 'inherit',
-                cwd: dirname(ctx.request.file.path),
-            }
-        );
-        kindlegen.once('close', (code) => {
-            unlink(ctx.request.file.path, (err) => {
-                if (err) console.error(err);
-                else console.log('Removed file', ctx.request.file.path);
-            });
-            unlink(
-                ctx.request.file.path.replace(/\.epub$/i, '.mobi8'),
-                (err) => {
-                    if (err) console.error(err);
-                    else
-                        console.log(
-                            'Removed file',
-                            ctx.request.file.path.replace(/\.epub$/i, '.mobi8')
-                        );
-                }
-            );
-            if (code !== 0) {
-                console.warn('kindlegen error code ' + code);
-            }
-
-            resolve(outname);
-        });
-    });
-
-    return returnValues;
-};
-
-/**
- * Convert the uploaded book to .kepub
- *
- * @param {*} ctx router
- * @param {*} filename the name of the file
- * @returns data of convertion
- */
-export const convertToKepub = async (ctx, filename) => {
-    const returnValues = {
-        conversion: '',
-        filename,
-        data: null,
-    };
-
-    returnValues.conversion = 'kepubify';
-    const outname = ctx.request.file.path.replace(/\.epub$/i, '.kepub.epub');
-    returnValues.filename = filename
-        .replace(/\.kepub\.epub$/i, '.epub')
-        .replace(/\.epub$/i, '.kepub.epub');
-
-    returnValues.data = await new Promise((resolve, reject) => {
-        const kepubify = spawn(
-            'kepubify',
-            [
+        },
+        kepubify: {
+            name: 'kepubify',
+            commands: [
                 '-v',
                 '-u',
                 '-o',
                 basename(outname),
                 basename(ctx.request.file.path),
             ],
-            {
-                stdio: 'inherit',
-                cwd: dirname(ctx.request.file.path),
-            }
-        );
-        kepubify.once('close', (code) => {
+        },
+    }
+
+    const outname = ctx.request.file.path.replace(/\.epub$/i, `${(conversion === 'kindlegen') ? '.mobi' : '.kepub.epub'}` );
+    returnValues.filename = filename
+        .replace(/\.kepub\.epub$/i, '.epub')
+        .replace(/\.epub$/i, `${(conversion === 'kindlegen') ? '.mobi' : '.kepub.epub'}`);
+
+    returnValues.data = await new Promise((resolve, reject) => {
+        // convert book
+        let converter;
+        try {
+            converter = spawn(
+                conversion,
+                (conversion === 'kindlegen') ? conversionCommands.kindlegen.commands : conversionCommands.kepubify.commands,
+                {
+                    stdio: 'inherit',
+                    cwd: dirname(ctx.request.file.path),
+                }
+            );
+        }
+        catch (error) {
+            console.error('Conversion didn\'t work check if cli tools for conversion are installed');
+        }
+        
+        // close converter
+        converter.once('close', (code) => {
             unlink(ctx.request.file.path, (err) => {
                 if (err) console.error(err);
                 else console.log('Removed file', ctx.request.file.path);
             });
+            
+            // replace epub with mobi8 in name if kindlegen
+            if (conversion === 'kindlegen') {
+                const mobiName = ctx.request.file.path.replace(/\.epub$/i, '.mobi8');
+                unlink(
+                    mobiName,
+                    (err) => {
+                        if (err) console.error(err);
+                        else console.log(`Removed file: \n ${mobiName}`);
+                    }
+                );
+            }
+            
+            // show error code if there is an error
             if (code !== 0) {
-                reject('kepubify error code ' + code);
+                reject(`${conversion} error code ${code}`);
                 return;
             }
-
+    
             resolve(outname);
         });
     });
 
     return returnValues;
-};
+}
 
 /**
  * Convert a book to a different type
@@ -128,22 +107,18 @@ export const convertBook = async (ctx, mimetype, info) => {
     const TYPE_EPUB = 'application/epub+zip';
 
     // the data after convertion
-    let convertionData = {
-        conversion: null,
-        filename: ctx.request.file.originalname,
-        data: null,
-    };
+    let convertionData = null;
 
     if (mimetype === TYPE_EPUB && info.agent.includes('Kindle')) {
         // convert to .mobi
-        convertionData = await convertToMobi(ctx, convertionData.filename);
+        convertionData = await convertWith('kindlegen', ctx, convertionData.filename);
     } else if (
         mimetype === TYPE_EPUB &&
         info.agent.includes('Kobo') &&
         ctx.request.body.kepubify
     ) {
         // convert to Kobo EPUB
-        convertionData = await convertToKepub(ctx, convertionData.filename);
+        convertionData = await convertWith('kepubify', ctx, convertionData.filename);
     } else {
         // No conversion
         convertionData.data = ctx.request.file.path;

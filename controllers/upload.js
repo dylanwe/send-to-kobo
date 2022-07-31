@@ -151,7 +151,13 @@ export const convertToCorrectType = async (ctx) => {
     const info = ctx.keys.get(key);
     expireKey(key, app.context);
 
-    const convertionData = await convertBook(ctx, mimetype, info);
+    const convertionData = await convertBook(
+        ctx.request.file.path,
+        ctx.request.body.kepubify,
+        ctx.request.file.originalname,
+        mimetype,
+        info.agent
+    );
 
     if (info.file && info.file.path) {
         await new Promise((resolve, reject) =>

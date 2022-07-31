@@ -1,15 +1,14 @@
 import filteType from 'file-type';
 import { unlink } from 'fs';
-import { app } from "./../index.js";
+import { app } from './../index.js';
 import { expireKey } from './key.js';
-import { convertToKepub, convertToMobi } from './../utils/convert.js';
+import { convertBook } from './../utils/convert.js';
 
 const TYPE_EPUB = 'application/epub+zip';
-const TYPE_MOBI = 'application/x-mobipocket-ebook';
 
 const allowedTypes = [
     TYPE_EPUB,
-    TYPE_MOBI,
+    'application/x-mobipocket-ebook',
     'application/pdf',
     'application/vnd.comicbook+zip',
     'application/vnd.comicbook-rar',
@@ -36,9 +35,8 @@ const flash = (ctx, data) => {
 
 /**
  * Upload a file to the uploads folder
- * 
+ *
  * @param {*} ctx the router
- * @returns ❌  ?
  */
 export const uploadToFolder = async (ctx) => {
     const key = ctx.request.body.key.toUpperCase();
@@ -104,32 +102,8 @@ export const uploadToFolder = async (ctx) => {
     const info = ctx.keys.get(key);
     expireKey(key, app.context);
 
-    let data = null;
-    let filename = ctx.request.file.originalname;
-    let conversion = null;
+    const convertionData = await convertBook(ctx, mimetype, info);
 
-    if (mimetype === TYPE_EPUB && info.agent.includes('Kindle')) {
-        // convert to .mobi
-        const convertionData = await convertToMobi(ctx, filename);
-        conversion = convertionData.conversion;
-        filename = convertionData.filename;
-        data = convertionData.data;
-    } else if (
-        mimetype === TYPE_EPUB &&
-        info.agent.includes('Kobo') &&
-        ctx.request.body.kepubify
-    ) {
-        // convert to Kobo EPUB
-        const convertionData = await convertToKepub(ctx, filename);
-        conversion = convertionData.conversion;
-        filename = convertionData.filename;
-        data = convertionData.data;
-    } else {
-        // No conversion
-        data = ctx.request.file.path;
-    }
-
-    expireKey(key, app.context);
     if (info.file && info.file.path) {
         await new Promise((resolve, reject) =>
             unlink(info.file.path, (err) => {
@@ -143,29 +117,20 @@ export const uploadToFolder = async (ctx) => {
             })
         );
     }
+
     info.file = {
-        name: filename,
-        path: data,
-        // size: ctx.request.file.size,
+        name: convertionData.filename,
+        path: convertionData.data,
         uploaded: new Date(),
     };
 
+    // send message if upload was successful
     flash(ctx, {
-        message:
-            'Upload successful!<br/>' +
-            (conversion
-                ? ' Ebook was converted with ' + conversion + ' and sent'
-                : ' Sent') +
-            ' to ' +
-            (info.agent.includes('Kobo')
-                ? 'a Kobo device.'
-                : info.agent.includes('Kindle')
-                ? 'a Kindle device.'
-                : 'a device.') +
-            '<br/>Filename: ' +
-            filename,
+        message: 'Upload successful!',
         success: true,
         key: key,
     });
+
+    // redirect back to homepage
     ctx.redirect('back', '/');
 };

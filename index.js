@@ -2,7 +2,7 @@ import multer from '@koa/multer';
 import Router from '@koa/router';
 import { existsSync, rm } from 'fs';
 import Koa from 'koa';
-import render from "koa-ejs";
+import render from 'koa-ejs';
 import logger from 'koa-logger';
 import sendfile from 'koa-sendfile';
 import serve from 'koa-static';
@@ -34,11 +34,10 @@ const maxFileSize = 1024 * 1024 * 800; // 800 MB
 const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
 
 const TYPE_EPUB = 'application/epub+zip';
-const TYPE_MOBI = 'application/x-mobipocket-ebook';
 
 const allowedTypes = [
     TYPE_EPUB,
-    TYPE_MOBI,
+    'application/x-mobipocket-ebook',
     'application/pdf',
     'application/vnd.comicbook+zip',
     'application/vnd.comicbook-rar',
@@ -203,7 +202,7 @@ router.get('/status/:key', async (ctx) => {
 
 // Render the download page
 router.get('/receive', async (ctx) => {
-    await sendfile(ctx, 'views/download.html');
+    await ctx.render('download');
 });
 
 // Render the homepage depending on what device the user is using

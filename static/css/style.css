@@ -21,3 +21,11 @@ body {
 .text-monospace {
     font-family: monospace;
 }
+
+#uploadstatus {
+    opacity: 0;
+}
+
+#downloadlink {
+    color: inherit;
+}

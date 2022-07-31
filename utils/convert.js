@@ -17,6 +17,8 @@ const convertWith = async (conversion, ctx, filename) => {
         data: null,
     };
 
+    const outname = ctx.request.file.path.replace(/\.epub$/i, `${(conversion === 'kindlegen') ? '.mobi' : '.kepub.epub'}` );
+
     // commands to run for converters
     const conversionCommands = {
         kindlegen: {
@@ -40,8 +42,7 @@ const convertWith = async (conversion, ctx, filename) => {
             ],
         },
     }
-
-    const outname = ctx.request.file.path.replace(/\.epub$/i, `${(conversion === 'kindlegen') ? '.mobi' : '.kepub.epub'}` );
+    
     returnValues.filename = filename
         .replace(/\.kepub\.epub$/i, '.epub')
         .replace(/\.epub$/i, `${(conversion === 'kindlegen') ? '.mobi' : '.kepub.epub'}`);
@@ -107,7 +108,9 @@ export const convertBook = async (ctx, mimetype, info) => {
     const TYPE_EPUB = 'application/epub+zip';
 
     // the data after convertion
-    let convertionData = null;
+    let convertionData = {
+        filename: ctx.request.file.originalname,
+    };
 
     if (mimetype === TYPE_EPUB && info.agent.includes('Kindle')) {
         // convert to .mobi

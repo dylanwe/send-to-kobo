@@ -28,10 +28,10 @@ deleteCookie('flash');
 if (flash) {
     if (flash.message) {
         if (flash.success) {
-            uploadstatus.className = ' success';
+            uploadstatus.className = 'alert alert-success';
             uploadstatus.innerHTML = flash.message;
         } else {
-            uploadstatus.className = ' error';
+            uploadstatus.className = 'alert alert-danger';
             uploadstatus.textContent = flash.message;
         }
         uploadstatus.style.opacity = 1;

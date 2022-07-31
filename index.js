@@ -1,4 +1,3 @@
-import multer from '@koa/multer';
 import Router from '@koa/router';
 import { existsSync, rm } from 'fs';
 import Koa from 'koa';
@@ -9,7 +8,7 @@ import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import path, { extname } from 'path';
 import { expireKey, generateRandomKey, removeKey } from './controllers/key.js';
-import { uploadToFolder } from './controllers/upload.js';
+import { upload, convertToCorrectType } from './controllers/upload.js';
 
 export const app = new Koa();
 const router = new Router();
@@ -29,69 +28,6 @@ render(app, {
 
 const port = 3000;
 const maxExpireDuration = 1 * 60 * 60; // 1 hour
-const maxFileSize = 1024 * 1024 * 800; // 800 MB
-
-const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
-
-const TYPE_EPUB = 'application/epub+zip';
-
-const allowedTypes = [
-    TYPE_EPUB,
-    'application/x-mobipocket-ebook',
-    'application/pdf',
-    'application/vnd.comicbook+zip',
-    'application/vnd.comicbook-rar',
-    'text/html',
-    'text/plain',
-    'application/zip',
-    'application/x-rar-compressed',
-];
-
-/**
- * Upload a file to the uploads folder
- */
-const upload = multer({
-    storage: multer.diskStorage({
-        destination: (req, file, cb) => {
-            cb(null, 'uploads');
-        },
-        filename: (req, file, cb) => {
-            const uniqueSuffix =
-                Date.now() + '-' + Math.floor(Math.random() * 1e9);
-            cb(
-                null,
-                file.fieldname +
-                    '-' +
-                    uniqueSuffix +
-                    extname(file.originalname).toLowerCase()
-            );
-        },
-    }),
-    limits: {
-        fileSize: maxFileSize,
-        files: 1,
-    },
-    fileFilter: (req, file, cb) => {
-        console.log('Incoming file:', file);
-        const key = req.body.key.toUpperCase();
-        if (!app.context.keys.has(key)) {
-            console.error('FileFilter: Unknown key: ' + key);
-            cb(null, false);
-            return;
-        }
-        if (
-            !allowedTypes.includes(file.mimetype) ||
-            !allowedExtensions.includes(
-                extname(file.originalname.toLowerCase()).substr(1)
-            )
-        ) {
-            console.error('FileFilter: File is of an invalid type ', file);
-            cb(null, false);
-            return;
-        }
-        cb(null, true);
-    },
-});
 
 // Generate a new key
 router.post('/generate', async (ctx) => {
@@ -156,7 +92,7 @@ router.get('/download/:key', async (ctx) => {
 
 // Upload a file to the uploads folder
 router.post('/upload', upload.single('file'), async (ctx) => {
-    await uploadToFolder(ctx);
+    await convertToCorrectType(ctx);
 });
 
 // delete a file with the given key

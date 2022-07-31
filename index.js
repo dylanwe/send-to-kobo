@@ -1,5 +1,6 @@
 import Koa from 'koa';
 import serve from 'koa-static';
+import render from "koa-ejs";
 import Router from '@koa/router';
 import multer from '@koa/multer';
 import logger from 'koa-logger';
@@ -7,7 +8,7 @@ import sendfile from 'koa-sendfile';
 import mkdirp from 'mkdirp';
 import { unlink, existsSync, rm } from 'fs';
 import { spawn } from 'child_process';
-import { extname, basename, dirname } from 'path';
+import path, { extname, basename, dirname } from 'path';
 import { generateRandomKey, removeKey, expireKey } from './utils/key.js';
 import filteType from 'file-type';
 
@@ -18,6 +19,14 @@ app.use(serve('./static'));
 app.use(logger());
 app.use(router.routes());
 app.use(router.allowedMethods());
+
+// config ejs view engine
+render(app, {
+    root: path.join(path.resolve(), '/views'),
+    layout: false,
+    viewExt: 'ejs',
+    cache: false,
+});
 
 const port = 3000;
 const maxExpireDuration = 1 * 60 * 60; // 1 hour
@@ -418,12 +427,12 @@ router.get('/receive', async (ctx) => {
 router.get('/', async (ctx) => {
     const agent = ctx.get('user-agent');
     console.log(ctx.ip, agent);
-    await sendfile(
-        ctx,
-        agent.includes('Kobo') || agent.includes('Kindle')
-            ? 'views/download.html'
-            : 'views/upload.html'
-    );
+
+    if (agent.includes('Kobo') || agent.includes('Kindle')) {
+        await ctx.render('download');
+    } else {
+        await ctx.render('upload');
+    }
 });
 
 /**

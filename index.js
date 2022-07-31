@@ -16,7 +16,7 @@ app.use(logger());
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-const port = 3001;
+const port = 3000;
 const expireDelay = 30; // 30 seconds
 const maxExpireDuration = 1 * 60 * 60; // 1 hour
 const maxFileSize = 1024 * 1024 * 800; // 800 MB
@@ -37,21 +37,24 @@ const allowedTypes = [
 ];
 const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
 
-const keyChars = '3469ACEGHLMNPRTY';
-const keyLength = 4;
 
-const randomKey = () => {
-    const choices = Math.pow(keyChars.length, keyLength);
-    const rnd = Math.floor(Math.random() * choices);
 
-    return rnd
-        .toString(keyChars.length)
-        .padStart(keyLength, '0')
-        .split('')
-        .map((chr) => {
-            return keyChars[parseInt(chr, keyChars.length)];
-        })
-        .join('');
+/**
+ * Generate a new random key made up of 4 random charachters
+ * 
+ * @returns A random string of 4 charachters
+ */
+const generateRandomKey = () => {
+    const keyLength = 4;
+    const keyChars = '3469ACEGHLMNPRTY';
+    let randomString = '';
+
+    for (let i = 0; i < keyLength; i++) {
+        const randomNumber = Math.floor(Math.random() * keyChars.length);
+        randomString += keyChars.charAt(randomNumber);
+    }
+
+    return randomString;
 };
 
 const removeKey = (key) => {
@@ -143,7 +146,7 @@ router.post('/generate', async (ctx) => {
     console.log('There are currently', ctx.keys.size, 'key(s) in use.');
     console.log('Generating unique key...', ctx.ip, agent);
     do {
-        key = randomKey();
+        key = generateRandomKey();
         if (attempts > ctx.keys.size) {
             console.error(
                 "Can't generate more keys, map is full.",

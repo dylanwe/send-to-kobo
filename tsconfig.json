@@ -6,7 +6,8 @@
         "target": "ES2017",
         "moduleResolution": "Node",
         "sourceMap": true,
-        "outDir": "./dist"
+        "outDir": "./dist",
+        "removeComments": true,
     },
     "lib": ["ES2022"]
 }

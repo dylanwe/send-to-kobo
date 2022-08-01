@@ -158,7 +158,6 @@ router.post('/upload', upload.single('file'), async (ctx: Context) => {
     );
 
     const convertionMessage = await convertToCorrectType(
-        ctx,
         key,
         file,
         kepubify,

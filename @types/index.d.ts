@@ -1,3 +1,9 @@
+interface FlashMessage {
+    message: string,
+    success: boolean,
+    key?: string,
+}
+
 interface StoredInformation {
     created: Date;
     agent: string;

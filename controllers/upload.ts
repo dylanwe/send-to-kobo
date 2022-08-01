@@ -5,13 +5,12 @@ import { unlink } from 'fs';
 import { app } from '../index.js';
 import { expireKey } from './key.js';
 import { convertBook } from '../utils/convert.js';
-import { Context, Request } from 'koa';
+import { Request } from 'koa';
 
-const TYPE_EPUB = 'application/epub+zip';
 const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
 const maxFileSize = 1024 * 1024 * 800; // 800 MB
 const allowedTypes = [
-    TYPE_EPUB,
+    'application/epub+zip',
     'application/x-mobipocket-ebook',
     'application/pdf',
     'application/vnd.comicbook+zip',
@@ -23,19 +22,6 @@ const allowedTypes = [
 ];
 
 /**
- * Send a flash message
- *
- * @param {*} ctx context of the user
- * @param {JSON} data the data to send in the message
- */
-const flash = (ctx, data) => {
-    ctx.cookies.set('flash', encodeURIComponent(JSON.stringify(data)), {
-        overwrite: true,
-        httpOnly: false,
-    });
-};
-
-/**
  * Upload a file to the uploads folder
  */
 export const upload = multer({
@@ -44,8 +30,9 @@ export const upload = multer({
             cb(null, 'uploads');
         },
         filename: (req, file, cb) => {
-            const uniqueSuffix =
-                Date.now() + '-' + Math.floor(Math.random() * 1e9);
+            const uniqueSuffix = `${Date.now()}-${Math.floor(
+                Math.random() * 1e9
+            )}`;
             cb(
                 null,
                 file.fieldname +
@@ -63,7 +50,7 @@ export const upload = multer({
         console.log('Incoming file:', file);
         const key = req.body.key.toUpperCase();
         if (!app.context.keys.has(key)) {
-            console.error('FileFilter: Unknown key: ' + key);
+            console.error(`FileFilter: Unknown key: ${key}`);
             cb(null, false);
             return;
         }
@@ -73,7 +60,7 @@ export const upload = multer({
                 extname(file.originalname.toLowerCase()).substr(1)
             )
         ) {
-            console.error('FileFilter: File is of an invalid type ', file);
+            console.error(`FileFilter: File is of an invalid type ${file}`);
             cb(null, false);
             return;
         }
@@ -82,80 +69,66 @@ export const upload = multer({
 });
 
 /**
+ * Remove a file with the given path
+ *
+ * @param filePath the path of the file to remove
+ */
+export const removeFile = (filePath: string) => {
+    unlink(filePath, (err) => {
+        if (err) console.error(err);
+        else console.log('Removed file', filePath);
+    });
+};
+
+/**
  * Upload a file to the uploads folder
  *
- * @param ctx the router
+ * @param key the key of the session
+ * @param requestFile the file to upload
+ * @param kepubify if it should be kepubified
+ * @param storedInformation the information in the cookie of this key
+ * @returns A message giving the status of the upload
  */
-export const convertToCorrectType = async (ctx: Context) => {
-    const key = ctx.request.body.key.toUpperCase();
-
-    // @ts-ignore
-    const requestFile = ctx.request.file;
+export const convertToCorrectType = async (
+    key: string,
+    requestFile: any,
+    kepubify: boolean,
+    storedInformation: StoredInformation
+): Promise<FlashMessage> => {
+    const mimetype = requestFile.mimetype;
+    const type = await filteType.fromFile(requestFile.path);
 
     if (requestFile) {
         console.log('Uploaded file:', requestFile);
     }
 
-    if (!ctx.keys.has(key)) {
-        flash(ctx, {
-            message: 'Unknown key ' + key,
-            success: false,
-        });
-        ctx.redirect('back', '/');
-        if (requestFile) {
-            unlink(requestFile.path, (err) => {
-                if (err) console.error(err);
-                else console.log('Removed file', requestFile.path);
-            });
-        }
-        return;
-    }
-
     if (!requestFile || requestFile.size === 0) {
-        flash(ctx, {
+        if (requestFile) {
+            removeFile(requestFile.path);
+        }
+        return {
             message: 'Invalid file submitted',
             success: false,
             key: key,
-        });
-        ctx.redirect('back', '/');
-        if (requestFile) {
-            unlink(requestFile.path, (err) => {
-                if (err) console.error(err);
-                else console.log('Removed file', requestFile.path);
-            });
-        }
-        return;
+        };
     }
-
-    const mimetype = requestFile.mimetype;
-
-    const type = await filteType.fromFile(requestFile.path);
 
     if (!type || !allowedTypes.includes(type.mime)) {
-        flash(ctx, {
-            message:
-                'Uploaded file is of an invalid type: ' +
-                requestFile.originalname +
-                ' (' +
-                (type ? type.mime : 'unknown mimetype') +
-                ')',
+        removeFile(requestFile.path);
+        return {
+            message: `Uploaded file is of an invalid type: ${
+                requestFile.originalname
+            } (${type ? type.mime : 'unknown mimetype'})`,
             success: false,
             key: key,
-        });
-        ctx.redirect('back', '/');
-        unlink(requestFile.path, (err) => {
-            if (err) console.error(err);
-            else console.log('Removed file', requestFile.path);
-        });
-        return;
+        };
     }
 
-    const storedInformation = (<Map<string, StoredInformation>> ctx.keys).get(key);
     expireKey(key);
 
     const convertionData = await convertBook(
         requestFile.path,
-        ctx.request.body.kepubify,
+        kepubify,
         requestFile.originalname,
         mimetype,
         storedInformation.agent
@@ -182,12 +155,9 @@ export const convertToCorrectType = async (ctx: Context) => {
     };
 
     // send message if upload was successful
-    flash(ctx, {
+    return {
         message: 'Upload successful!',
         success: true,
         key: key,
-    });
-
-    // redirect back to homepage
-    ctx.redirect('back', '/');
+    };
 };

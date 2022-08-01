@@ -70,17 +70,14 @@ router.get('/status/:key', async (ctx: Context) => {
     const storedInformation = (<Map<string, StoredInformation>>ctx.keys).get(
         key
     );
+
     if (!storedInformation) {
         ctx.body = { error: 'Unknown key' };
         return;
     }
+
     if (storedInformation.agent !== ctx.get('user-agent')) {
-        // don't send this error to client
-        console.error(
-            `User Agent doesnt match: ${storedInformation.agent} VS ${ctx.get(
-                'user-agent'
-            )}`
-        );
+        console.error('User Agent doesnt match');
         return;
     }
 
@@ -98,30 +95,19 @@ router.post('/generate', async (ctx: Context) => {
     const agent = ctx.get('user-agent');
     const maxExpireDuration = 1000 * 60 * 60; // 1 hour
 
-    let key = '';
-    let attempts = 0;
+    let key = generateRandomKey(ctx.keys);
 
-    do {
-        key = generateRandomKey();
-        if (attempts > ctx.keys.size) {
-            console.error(
-                "Can't generate more keys, map is full.",
-                attempts,
-                ctx.keys.size
-            );
-            ctx.body = 'error';
-            return;
-        }
-        attempts++;
-    } while (ctx.keys.has(key));
-
-    console.log(`Generated key ${key}, ${attempts} attempt(s)`);
+    if (!key) {
+        ctx.body = 'error';
+        return;
+    }
 
     const informationOfKey: StoredInformation = {
         created: new Date(),
         agent: agent,
         file: null,
     };
+
     ctx.keys.set(key, informationOfKey);
     expireKey(key);
     setTimeout(() => {
@@ -138,9 +124,12 @@ router.post('/upload', upload.single('file'), async (ctx: Context) => {
     const file = ctx.request.file;
     const key = (<string> ctx.request.body.key).toUpperCase();
     const kepubify = <boolean> ctx.request.body.kepubify;
+    const storedInformation = (<Map<string, StoredInformation>>ctx.keys).get(
+        key
+    );
 
-    // errors
-    if (!ctx.keys.has(key)) {
+    // if key can't be found than 
+    if (!storedInformation) {
         flash(ctx, {
             message: `Unknown key ${key}`,
             success: false,
@@ -152,10 +141,6 @@ router.post('/upload', upload.single('file'), async (ctx: Context) => {
         }
         return;
     }
-
-    const storedInformation = (<Map<string, StoredInformation>>ctx.keys).get(
-        key
-    );
 
     const convertionMessage = await convertToCorrectType(
         key,

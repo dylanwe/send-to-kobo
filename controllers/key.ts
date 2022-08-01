@@ -5,20 +5,30 @@ const expireDelay = 30; // 30 seconds delay before a key expires
 
 /**
  * Generate a new random key made up of 4 random charachters
- *
+ * 
+ * @param keys all the current keys in the application
  * @returns A random string of 4 charachters
  */
-export const generateRandomKey = () => {
-    const keyLength = 4;
-    const keyChars = '3469ACEGHLMNPRTY';
-    let randomString = '';
+export const generateRandomKey = (keys: Map<string, StoredInformation>) => {
+    let [key, attempts] = ['', 0];
 
-    for (let i = 0; i < keyLength; i++) {
-        const randomNumber = Math.floor(Math.random() * keyChars.length);
-        randomString += keyChars.charAt(randomNumber);
-    }
+    do {
+        const keyLength = 4;
+        const keyChars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
-    return randomString;
+        for (let i = 0; i < keyLength; i++) {
+            const randomNumber = Math.floor(Math.random() * keyChars.length);
+            key += keyChars.charAt(randomNumber);
+        }
+
+        if (attempts > keys.size) {
+            console.error("Can't generate more keys, map is full.");
+            return;
+        }
+        attempts++;
+    } while (keys.has(key));
+
+    return key;
 };
 
 /**

@@ -150,7 +150,7 @@ export const convertToCorrectType = async (ctx: Context) => {
         return;
     }
 
-    const info = ctx.keys.get(key);
+    const storedInformation = (<Map<string, StoredInformation>> ctx.keys).get(key);
     expireKey(key);
 
     const convertionData = await convertBook(
@@ -158,24 +158,24 @@ export const convertToCorrectType = async (ctx: Context) => {
         ctx.request.body.kepubify,
         requestFile.originalname,
         mimetype,
-        info.agent
+        storedInformation.agent
     );
 
-    if (info.file && info.file.path) {
+    if (storedInformation.file && storedInformation.file.path) {
         await new Promise((resolve, reject) =>
-            unlink(info.file.path, (err) => {
+            unlink(storedInformation.file.path, (err) => {
                 if (err) return reject(err);
                 else
                     console.log(
                         'Removed previously uploaded file',
-                        info.file.path
+                        storedInformation.file.path
                     );
                 resolve(true);
             })
         );
     }
 
-    info.file = {
+    storedInformation.file = {
         name: convertionData.filename,
         path: convertionData.data,
         uploaded: new Date(),

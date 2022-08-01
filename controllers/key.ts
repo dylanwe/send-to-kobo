@@ -28,15 +28,15 @@ export const generateRandomKey = () => {
  */
 export const removeKey = (key: string) => {
     console.log('Removing expired key', key);
-    const info = app.context.keys.get(key);
-    if (info) {
-        clearTimeout(app.context.keys.get(key).timer);
-        if (info.file) {
-            console.log(`Deleting file ${info.file.path}`);
-            unlink(info.file.path, (err) => {
+    const storedInformation = (<Map<string, StoredInformation>> app.context.keys).get(key);
+    if (storedInformation) {
+        clearTimeout(storedInformation.timer);
+        if (storedInformation.file) {
+            console.log(`Deleting file ${storedInformation.file.path}`);
+            unlink(storedInformation.file.path, (err) => {
                 if (err) console.error(err);
             });
-            info.file = null;
+            storedInformation.file = null;
         }
         app.context.keys.delete(key);
         return;
@@ -53,13 +53,13 @@ export const removeKey = (key: string) => {
  */
 export const expireKey = (key: string) => {
     console.log(`key ${key} will expire in ${expireDelay} seconds`);
-    const info = app.context.keys.get(key);
+    const storedInformation = (<Map<string, StoredInformation>> app.context.keys).get(key);
     const timer = setTimeout(removeKey, expireDelay * 1000, key);
 
-    if (info) {
-        clearTimeout(info.timer);
-        info.timer = timer;
-        info.alive = new Date();
+    if (storedInformation) {
+        clearTimeout(storedInformation.timer);
+        storedInformation.timer = timer;
+        storedInformation.alive = new Date();
     }
 
     return timer;

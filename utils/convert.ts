@@ -10,8 +10,8 @@ import { basename, dirname } from 'path';
  * @param filename the name of the file
  * @returns data of conversion
  */
-const convertWith = async (conversion: string, pathOfFile: string, filename: string) => {
-    const returnValues = {
+const convertWith = async (conversion: string, pathOfFile: string, filename: string): Promise<ConversionData> => {
+    const returnValues: ConversionData = {
         conversion,
         filename,
         data: null,
@@ -107,12 +107,6 @@ const convertWith = async (conversion: string, pathOfFile: string, filename: str
  */
 export const convertBook = async (pathOfFile: string, kepubify: boolean, originalFileName: string, mimetype: any, agent: any) => {
     const TYPE_EPUB = 'application/epub+zip';
-
-    interface ConversionData {
-        conversion: string,
-        filename: string,
-        data: any,
-    }
 
     // the data after convertion
     let convertionData: ConversionData = {

@@ -5,7 +5,7 @@ import logger from 'koa-logger';
 import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import path from 'path';
-import router from './router.js';
+import router from './router';
 
 const port = 3000;
 export const app = new Koa();

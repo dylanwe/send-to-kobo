@@ -2,9 +2,9 @@ import filteType from 'file-type';
 import multer from '@koa/multer';
 import { extname } from 'path';
 import { unlink } from 'fs';
-import { app } from '../index.js';
-import { expireKey } from './key.js';
-import { convertBook } from '../utils/convert.js';
+import { app } from '../index';
+import { expireKey } from './key';
+import { convertBook } from '../utils/convert';
 import { Request } from 'koa';
 
 const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];

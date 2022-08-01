@@ -1,12 +1,12 @@
 import { Context } from 'koa';
 import Router from 'koa-router';
 import sendfile from 'koa-sendfile';
-import { expireKey, generateRandomKey, removeKey } from './controllers/key.js';
+import { expireKey, generateRandomKey, removeKey } from './controllers/key';
 import {
     convertToCorrectType,
     upload,
     removeFile,
-} from './controllers/upload.js';
+} from './controllers/upload';
 import flash from "./utils/flash";
 
 const router = new Router();

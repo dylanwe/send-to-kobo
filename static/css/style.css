@@ -29,3 +29,7 @@ body {
 #downloadlink {
     color: inherit;
 }
+
+#key {
+    font-weight: 500;
+}

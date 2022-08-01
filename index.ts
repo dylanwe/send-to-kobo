@@ -1,15 +1,16 @@
-import Router from '@koa/router';
+import Koa, { Context } from 'koa';
+import Router from 'koa-router';
 import { existsSync, rm } from 'fs';
-import Koa from 'koa';
 import render from 'koa-ejs';
 import logger from 'koa-logger';
 import sendfile from 'koa-sendfile';
 import serve from 'koa-static';
 import mkdirp from 'mkdirp';
-import path, { extname } from 'path';
+import path from 'path';
 import { expireKey, generateRandomKey, removeKey } from './controllers/key.js';
 import { upload, convertToCorrectType } from './controllers/upload.js';
 
+const port = 3000;
 export const app = new Koa();
 const router = new Router();
 app.context.keys = new Map();
@@ -26,17 +27,14 @@ render(app, {
     cache: false,
 });
 
-const port = 3000;
-const maxExpireDuration = 1 * 60 * 60; // 1 hour
-
 // Generate a new key
-router.post('/generate', async (ctx) => {
+router.post('/generate', async (ctx: Context) => {
     const agent = ctx.get('user-agent');
+    const maxExpireDuration = 1000 * 60 * 60; // 1 hour
 
-    let key = null;
+    let key = '';
     let attempts = 0;
-    console.log('There are currently', ctx.keys.size, 'key(s) in use.');
-    console.log('Generating unique key...', ctx.ip, agent);
+
     do {
         key = generateRandomKey();
         if (attempts > ctx.keys.size) {
@@ -51,7 +49,7 @@ router.post('/generate', async (ctx) => {
         attempts++;
     } while (ctx.keys.has(key));
 
-    console.log('Generated key ' + key + ', ' + attempts + ' attempt(s)');
+    console.log(`Generated key ${key}, ${attempts} attempt(s)`);
 
     const info = {
         created: new Date(),
@@ -59,17 +57,17 @@ router.post('/generate', async (ctx) => {
         file: null,
     };
     ctx.keys.set(key, info);
-    expireKey(key, app.context);
+    expireKey(key);
     setTimeout(() => {
         // remove if it is the same object
-        if (ctx.keys.get(key) === info) removeKey(key, app.context);
-    }, maxExpireDuration * 1000);
+        if (ctx.keys.get(key) === info) removeKey(key);
+    }, maxExpireDuration);
 
     ctx.body = key;
 });
 
 // Download a file with the given key
-router.get('/download/:key', async (ctx) => {
+router.get('/download/:key', async (ctx: Context) => {
     const key = ctx.params.key.toUpperCase();
     const info = ctx.keys.get(key);
     if (!info || !info.file) {
@@ -77,26 +75,23 @@ router.get('/download/:key', async (ctx) => {
     }
     if (info.agent !== ctx.get('user-agent')) {
         console.error(
-            'User Agent doesnt match: ' +
-                info.agent +
-                ' VS ' +
-                ctx.get('user-agent')
+            `User Agent doesnt match: ${info.agent} VS ${ctx.get('user-agent')}`
         );
         return;
     }
-    expireKey(key, app.context);
+    expireKey(key);
     console.log('Sending file', info.file.path);
     await sendfile(ctx, info.file.path);
     ctx.attachment(info.file.name);
 });
 
 // Upload a file to the uploads folder
-router.post('/upload', upload.single('file'), async (ctx) => {
+router.post('/upload', upload.single('file'), async (ctx: Context) => {
     await convertToCorrectType(ctx);
 });
 
 // delete a file with the given key
-router.delete('/file/:key', async (ctx) => {
+router.delete('/file/:key', async (ctx: Context) => {
     const key = ctx.params.key.toUpperCase();
     const info = ctx.keys.get(key);
     if (!info) {
@@ -107,7 +102,7 @@ router.delete('/file/:key', async (ctx) => {
 });
 
 // Get the status of the key
-router.get('/status/:key', async (ctx) => {
+router.get('/status/:key', async (ctx: Context) => {
     const key = ctx.params.key.toUpperCase();
     const info = ctx.keys.get(key);
     if (!info) {
@@ -124,27 +119,25 @@ router.get('/status/:key', async (ctx) => {
         );
         return;
     }
-    expireKey(key, app.context);
+    expireKey(key);
     ctx.body = {
         alive: info.alive,
         file: info.file
             ? {
                   name: info.file.name,
-                  // size: info.file.size
               }
             : null,
     };
 });
 
 // Render the download page
-router.get('/receive', async (ctx) => {
+router.get('/receive', async (ctx: Context) => {
     await ctx.render('download');
 });
 
 // Render the homepage depending on what device the user is using
 router.get('/', async (ctx) => {
     const agent = ctx.get('user-agent');
-    console.log(ctx.ip, agent);
 
     if (agent.includes('Kobo') || agent.includes('Kindle')) {
         await ctx.render('download');
@@ -153,24 +146,17 @@ router.get('/', async (ctx) => {
     }
 });
 
-/**
- * Start the app
- */
-const startApp = () => {
-    app.listen(port);
-    console.log(`server is listening on port http://localhost:${port}`);
-};
-
-// Check if upload folder exists
+// remove upload folder
 if (existsSync('./uploads')) {
-    rm('uploads', { recursive: true }, (err) => {
-        if (err) throw err;
-        mkdirp('uploads').then(() => {
-            startApp();
-        });
-    });
-} else {
-    mkdirp('uploads').then(() => {
-        startApp();
-    });
+    await new Promise((resolve) =>
+        rm('uploads', { recursive: true }, (err) => {
+            if (err) throw err;
+            resolve(true);
+        })
+    );
 }
+
+await mkdirp('uploads');
+
+app.listen(port);
+console.log(`⚡️ [Server] - server is listening on port http://localhost:${port}`);

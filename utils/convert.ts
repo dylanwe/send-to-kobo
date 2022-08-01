@@ -5,12 +5,12 @@ import { basename, dirname } from 'path';
 /**
  * Convert a book to another format
  * 
- * @param {string} conversion what conversion command to run
- * @param {string} pathOfFile the path of the file
- * @param {string} filename the name of the file
+ * @param conversion what conversion command to run
+ * @param pathOfFile the path of the file
+ * @param filename the name of the file
  * @returns data of conversion
  */
-const convertWith = async (conversion, pathOfFile, filename) => {
+const convertWith = async (conversion: string, pathOfFile: string, filename: string) => {
     const returnValues = {
         conversion,
         filename,
@@ -99,17 +99,27 @@ const convertWith = async (conversion, pathOfFile, filename) => {
 /**
  * Convert a book to a different type
  * 
- * @param {string} pathOfFile the path of the book to convert
- * @param {boolean} kepubify if the book should be kepubified
- * @param {string} originalFileName the original name of the file
- * @param {*} mimetype the type of the book
- * @param {*} agent what device the user is using
+ * @param pathOfFile the path of the book to convert
+ * @param kepubify if the book should be kepubified
+ * @param originalFileName the original name of the file
+ * @param mimetype the type of the book
+ * @param agent what device the user is using
  */
-export const convertBook = async (pathOfFile, kepubify, originalFileName, mimetype, agent) => {
+export const convertBook = async (pathOfFile: string, kepubify: boolean, originalFileName: string, mimetype: any, agent: any) => {
     const TYPE_EPUB = 'application/epub+zip';
 
+    interface ConversionData {
+        conversion: string,
+        filename: string,
+        data: any,
+    }
+
     // the data after convertion
-    let convertionData = null;
+    let convertionData: ConversionData = {
+        conversion: '',
+        filename: originalFileName,
+        data: null,
+    };
 
     if (mimetype === TYPE_EPUB && agent.includes('Kindle')) {
         // convert to .mobi

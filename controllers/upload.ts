@@ -2,9 +2,10 @@ import filteType from 'file-type';
 import multer from '@koa/multer';
 import { extname } from 'path';
 import { unlink } from 'fs';
-import { app } from './../index.js';
+import { app } from '../index.js';
 import { expireKey } from './key.js';
-import { convertBook } from './../utils/convert.js';
+import { convertBook } from '../utils/convert.js';
+import { Context, Request } from 'koa';
 
 const TYPE_EPUB = 'application/epub+zip';
 const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
@@ -28,8 +29,6 @@ const allowedTypes = [
  * @param {JSON} data the data to send in the message
  */
 const flash = (ctx, data) => {
-    console.log(data);
-
     ctx.cookies.set('flash', encodeURIComponent(JSON.stringify(data)), {
         overwrite: true,
         httpOnly: false,
@@ -60,7 +59,7 @@ export const upload = multer({
         fileSize: maxFileSize,
         files: 1,
     },
-    fileFilter: (req, file, cb) => {
+    fileFilter: (req: Request, file: any, cb: any) => {
         console.log('Incoming file:', file);
         const key = req.body.key.toUpperCase();
         if (!app.context.keys.has(key)) {
@@ -85,13 +84,16 @@ export const upload = multer({
 /**
  * Upload a file to the uploads folder
  *
- * @param {*} ctx the router
+ * @param ctx the router
  */
-export const convertToCorrectType = async (ctx) => {
+export const convertToCorrectType = async (ctx: Context) => {
     const key = ctx.request.body.key.toUpperCase();
 
-    if (ctx.request.file) {
-        console.log('Uploaded file:', ctx.request.file);
+    // @ts-ignore
+    const requestFile = ctx.request.file;
+
+    if (requestFile) {
+        console.log('Uploaded file:', requestFile);
     }
 
     if (!ctx.keys.has(key)) {
@@ -100,40 +102,40 @@ export const convertToCorrectType = async (ctx) => {
             success: false,
         });
         ctx.redirect('back', '/');
-        if (ctx.request.file) {
-            unlink(ctx.request.file.path, (err) => {
+        if (requestFile) {
+            unlink(requestFile.path, (err) => {
                 if (err) console.error(err);
-                else console.log('Removed file', ctx.request.file.path);
+                else console.log('Removed file', requestFile.path);
             });
         }
         return;
     }
 
-    if (!ctx.request.file || ctx.request.file.size === 0) {
+    if (!requestFile || requestFile.size === 0) {
         flash(ctx, {
             message: 'Invalid file submitted',
             success: false,
             key: key,
         });
         ctx.redirect('back', '/');
-        if (ctx.request.file) {
-            unlink(ctx.request.file.path, (err) => {
+        if (requestFile) {
+            unlink(requestFile.path, (err) => {
                 if (err) console.error(err);
-                else console.log('Removed file', ctx.request.file.path);
+                else console.log('Removed file', requestFile.path);
             });
         }
         return;
     }
 
-    const mimetype = ctx.request.file.mimetype;
+    const mimetype = requestFile.mimetype;
 
-    const type = await filteType.fromFile(ctx.request.file.path);
+    const type = await filteType.fromFile(requestFile.path);
 
     if (!type || !allowedTypes.includes(type.mime)) {
         flash(ctx, {
             message:
                 'Uploaded file is of an invalid type: ' +
-                ctx.request.file.originalname +
+                requestFile.originalname +
                 ' (' +
                 (type ? type.mime : 'unknown mimetype') +
                 ')',
@@ -141,20 +143,20 @@ export const convertToCorrectType = async (ctx) => {
             key: key,
         });
         ctx.redirect('back', '/');
-        unlink(ctx.request.file.path, (err) => {
+        unlink(requestFile.path, (err) => {
             if (err) console.error(err);
-            else console.log('Removed file', ctx.request.file.path);
+            else console.log('Removed file', requestFile.path);
         });
         return;
     }
 
     const info = ctx.keys.get(key);
-    expireKey(key, app.context);
+    expireKey(key);
 
     const convertionData = await convertBook(
-        ctx.request.file.path,
+        requestFile.path,
         ctx.request.body.kepubify,
-        ctx.request.file.originalname,
+        requestFile.originalname,
         mimetype,
         info.agent
     );
@@ -168,7 +170,7 @@ export const convertToCorrectType = async (ctx) => {
                         'Removed previously uploaded file',
                         info.file.path
                     );
-                resolve();
+                resolve(true);
             })
         );
     }

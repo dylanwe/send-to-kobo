@@ -7,21 +7,9 @@ import {
     upload,
     removeFile,
 } from './controllers/upload.js';
+import flash from "./utils/flash";
 
 const router = new Router();
-
-/**
- * Send a flash message
- *
- * @param ctx context of the user
- * @param data the data to send in the message
- */
-const flash = (ctx: any, data: FlashMessage) => {
-    ctx.cookies.set('flash', encodeURIComponent(JSON.stringify(data)), {
-        overwrite: true,
-        httpOnly: false,
-    });
-};
 
 // Render the homepage depending on what device the user is using
 router.get('/', async (ctx) => {

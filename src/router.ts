@@ -2,12 +2,8 @@ import { Context } from 'koa';
 import Router from 'koa-router';
 import sendfile from 'koa-sendfile';
 import { expireKey, generateRandomKey, removeKey } from './controllers/key';
-import {
-    convertToCorrectType,
-    upload,
-    removeFile,
-} from './controllers/upload';
-import flash from "./utils/flash";
+import { convertToCorrectType, upload, removeFile } from './controllers/upload';
+import flash from './utils/flash';
 
 const router = new Router();
 
@@ -110,13 +106,13 @@ router.post('/generate', async (ctx: Context) => {
 router.post('/upload', upload.single('file'), async (ctx: Context) => {
     // @ts-ignore
     const file = ctx.request.file;
-    const key = (<string> ctx.request.body.key).toUpperCase();
-    const kepubify = <boolean> ctx.request.body.kepubify;
+    const key = (<string>ctx.request.body.key).toUpperCase();
+    const kepubify = <boolean>ctx.request.body.kepubify;
     const storedInformation = (<Map<string, StoredInformation>>ctx.keys).get(
         key
     );
 
-    // if key can't be found than 
+    // if key can't be found than
     if (!storedInformation) {
         flash(ctx, {
             message: `Unknown key ${key}`,

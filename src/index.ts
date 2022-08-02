@@ -10,14 +10,14 @@ import router from './router';
 const port = 3000;
 export const app = new Koa();
 app.context.keys = new Map();
-app.use(serve('./static'));
+app.use(serve('./src/static'));
 app.use(logger());
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 // config ejs view engine
 render(app, {
-    root: path.join(path.resolve(), '/views'),
+    root: path.join(path.resolve(), '/src/views'),
     layout: false,
     viewExt: 'ejs',
     cache: false,

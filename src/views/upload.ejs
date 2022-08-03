@@ -9,7 +9,7 @@
 <body>
 	<div class="container">
 		<header class="jumbotron mt-5">
-			<h1 class="display-4">Send to Kobo/Kindle</h1>
+			<h1 class="display-4">Send to Kobo</h1>
 		</header>
 
 		<main>
@@ -31,10 +31,7 @@
 						<label class="custom-file-label" id="fileInputLabel" for="fileinput">Choose file</label>
 					</div>
 				</div>
-				<small id="fileinfo" class="form-text text-muted">
-					Your password must be 8-20 characters long, contain letters and numbers, and must not contain
-					spaces, special characters, or emoji.
-				</small>
+				<small id="fileinfo" class="form-text text-muted"></small>
 
 				<div class="form-check mt-3">
 					<input class="form-check-input" type="checkbox" name="kepubify" id="kepubify" checked>
@@ -52,13 +49,11 @@
 			<hr>
 			<section class="mt-5">
 				<p>
-					Go to this this page on your Kobo/Kindle ereader and you see a unique key. Enter it in this form and
+					Go to this this page on your Kobo ereader and you see a unique key. Enter it in this form and
 					upload an ebook and it will appear as a download link on the ereader.
 					<br> <br>
-					If you send an EPUB file to to a Kindle it will be converted to MOBI with KindleGen. If you send a
-					MOBI file to a Kindle it will be sent unprocessed. If you send an EPUB file and tick the Kepubify
-					checkbox, it will be converted into a Kobo EPUB using Kepubify. If you send a MOBI file to a Kobo,
-					it will not be converted.
+					If you send an EPUB file and tick the Kepubify
+					checkbox, it will be converted into a Kobo EPUB using Kepubify.
 					<br> <br>
 					Your ebook will be stored on the server as long as your Kobo/Kindle is viewing the unique key and is
 					connected to wifi. It will be deleted irrevocably when the key expires about 30 seconds after you
@@ -73,9 +68,7 @@
 				<p>
 					Created by <a href="https://github.com/dylanwe" target="_blank">Dylan</a> and djazz. Powered by <a
 						href="https://koajs.com/" target="_blank">Koa</a>, <a href="https://pgaskin.net/kepubify/"
-						target="_blank">Kepubify</a> and <a
-						href="https://www.amazon.com/gp/feature.html?ie=UTF8&docId=1000765211"
-						target="_blank">KindleGen</a><br />Source code on <a
+						target="_blank">Kepubify</a> <br />Source code on <a
 						href="https://github.com/dylanwe/send-to-reader" target="_blank">Github</a>
 				</p>
 			</section>

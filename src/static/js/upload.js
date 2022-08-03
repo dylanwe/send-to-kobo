@@ -1,5 +1,4 @@
 const uploadstatus = document.querySelector('#uploadstatus');
-const keyinput = document.querySelector('#keyinput');
 const fileinput = document.querySelector('#fileinput');
 const uploadTitle = document.querySelector('#uploadTitle');
 const fileinfo = document.querySelector('#fileinfo');
@@ -26,6 +25,7 @@ const deleteCookie = (name) => {
 
 const showFlashMessage = () => {
     const flash = getCookies().flash;
+    const keyinput = document.querySelector('#keyinput');
     deleteCookie('flash');
 
     if (flash) {

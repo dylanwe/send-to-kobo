@@ -107,10 +107,9 @@ router.post('/upload', upload.single('file'), async (ctx: Context) => {
     // @ts-ignore
     const file = ctx.request.file;
     const key = (<string>ctx.request.body.key).toUpperCase();
-    const kepubify = <boolean>ctx.request.body.kepubify;
     const storedInformation = (<Map<string, StoredInformation>>ctx.keys).get(
         key
-    );
+    );    
 
     // if key can't be found than
     if (!storedInformation) {
@@ -129,7 +128,6 @@ router.post('/upload', upload.single('file'), async (ctx: Context) => {
     const convertionMessage = await convertToCorrectType(
         key,
         file,
-        kepubify,
         storedInformation
     );
 

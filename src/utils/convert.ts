@@ -73,14 +73,12 @@ const convertToKepub = async (
  * Convert a book to a different type
  *
  * @param pathOfFile the path of the book to convert
- * @param kepubify if the book should be kepubified
  * @param originalFileName the original name of the file
  * @param mimetype the type of the book
  * @param agent what device the user is using
  */
 export const convertBook = async (
     pathOfFile: string,
-    kepubify: boolean,
     originalFileName: string,
     mimetype: any,
     agent: any
@@ -94,7 +92,7 @@ export const convertBook = async (
         data: null,
     };
 
-    if (mimetype === TYPE_EPUB && agent.includes('Kobo') && kepubify) {
+    if (mimetype === TYPE_EPUB && agent.includes('Kobo')) {
         convertionData = await convertToKepub(pathOfFile, originalFileName);
     } else {
         // No conversion

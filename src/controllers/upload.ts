@@ -85,14 +85,12 @@ export const removeFile = (filePath: string) => {
  *
  * @param key the key of the session
  * @param requestFile the file to upload
- * @param kepubify if it should be kepubified
  * @param storedInformation the information in the cookie of this key
  * @returns A message giving the status of the upload
  */
 export const convertToCorrectType = async (
     key: string,
     requestFile: any,
-    kepubify: boolean,
     storedInformation: StoredInformation
 ): Promise<FlashMessage> => {
     const mimetype = requestFile.mimetype;
@@ -128,7 +126,6 @@ export const convertToCorrectType = async (
 
     const convertionData = await convertBook(
         requestFile.path,
-        kepubify,
         requestFile.originalname,
         mimetype,
         storedInformation.agent

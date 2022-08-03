@@ -23,6 +23,19 @@ render(app, {
     cache: false,
 });
 
+// 404 page
+app.use(async (ctx, next) => {
+    try {
+        await next();
+
+        if (ctx.status === 404) ctx.throw(404);
+    } catch (err) {
+        console.error(err);
+        ctx.status = err.status || 500;
+        await ctx.render('404');
+    }
+});
+
 // remove upload folder
 if (existsSync('./uploads')) {
     await new Promise((resolve) =>

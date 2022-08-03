@@ -41,6 +41,8 @@ describe('convert', () => {
             sample.filename
         );
 
-        expect(convertedValues.data).toBe('uploads-test/sample-copy.kepub.epub');
+        expect(convertedValues.data).toBe(
+            'uploads-test/sample-copy.kepub.epub'
+        );
     });
 });

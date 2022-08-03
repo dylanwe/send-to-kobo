@@ -19,6 +19,7 @@ const allowedTypes = [
     'text/plain',
     'application/zip',
     'application/x-rar-compressed',
+    'application/octet-stream',
 ];
 
 /**

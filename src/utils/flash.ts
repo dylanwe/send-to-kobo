@@ -10,6 +10,7 @@ const flash = (ctx: Context, data: FlashMessage) => {
     ctx.cookies.set('flash', encodeURIComponent(JSON.stringify(data)), {
         overwrite: true,
         httpOnly: false,
+        sameSite: "strict",
     });
 };
 

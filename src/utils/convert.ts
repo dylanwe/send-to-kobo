@@ -9,7 +9,7 @@ import { basename, dirname } from 'path';
  * @param filename the name of the file
  * @returns data of conversion
  */
-const convertToKepub = async (
+export const convertToKepub = async (
     pathOfFile: string,
     filename: string
 ): Promise<ConversionData> => {
@@ -27,7 +27,7 @@ const convertToKepub = async (
 
     returnValues.data = await new Promise((resolve, reject) => {
         // convert book
-        let converter;
+        let converter: any;
         try {
             converter = spawn(
                 'kepubify',

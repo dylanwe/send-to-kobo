@@ -1,7 +1,7 @@
 import { app } from "../index";
 import { unlink } from 'fs';
 
-const expireDelay = 30; // 30 seconds delay before a key expires
+const EXPIRE_DELAY = 30; // 30 seconds delay before a key expires
 
 /**
  * Generate a new random key made up of 4 random charachters
@@ -62,9 +62,9 @@ export const removeKey = (key: string) => {
  * @returns the expiration timer
  */
 export const expireKey = (key: string) => {
-    console.log(`key ${key} will expire in ${expireDelay} seconds`);
+    console.log(`key ${key} will expire in ${EXPIRE_DELAY} seconds`);
     const storedInformation = (<Map<string, StoredInformation>> app.context.keys).get(key);
-    const timer = setTimeout(removeKey, expireDelay * 1000, key);
+    const timer = setTimeout(removeKey, EXPIRE_DELAY * 1000, key);
 
     if (storedInformation) {
         clearTimeout(storedInformation.timer);

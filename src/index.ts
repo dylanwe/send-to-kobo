@@ -7,7 +7,7 @@ import mkdirp from 'mkdirp';
 import path from 'path';
 import router from './router';
 
-const port = 3000;
+const PORT = 3000;
 export const app = new Koa();
 app.context.keys = new Map();
 app.use(serve('./src/static'));
@@ -49,7 +49,7 @@ if (existsSync('./uploads')) {
 await mkdirp('uploads');
 
 // start server
-app.listen(port);
+app.listen(PORT);
 console.log(
-    `⚡️ [Server] - server is listening on port http://localhost:${port}`
+    `⚡️ [Server] - server is listening on port http://localhost:${PORT}`
 );

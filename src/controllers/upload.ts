@@ -7,9 +7,9 @@ import { expireKey } from './key';
 import { convertBook } from '../utils/convert';
 import { Request } from 'koa';
 
-const allowedExtensions = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
-const maxFileSize = 1024 * 1024 * 800; // 800 MB
-const allowedTypes = [
+const ALLOWED_EXTENSIONS = ['epub', 'mobi', 'pdf', 'cbz', 'cbr', 'html', 'txt'];
+const MAX_FILE_SIZE = 1024 * 1024 * 800; // 800 MB
+const ALLOWED_TYPES = [
     'application/epub+zip',
     'application/x-mobipocket-ebook',
     'application/pdf',
@@ -44,7 +44,7 @@ export const upload = multer({
         },
     }),
     limits: {
-        fileSize: maxFileSize,
+        fileSize: MAX_FILE_SIZE,
         files: 1,
     },
     fileFilter: (req: Request, file: any, cb: any) => {
@@ -56,8 +56,8 @@ export const upload = multer({
             return;
         }
         if (
-            !allowedTypes.includes(file.mimetype) ||
-            !allowedExtensions.includes(
+            !ALLOWED_TYPES.includes(file.mimetype) ||
+            !ALLOWED_EXTENSIONS.includes(
                 extname(file.originalname.toLowerCase()).substr(1)
             )
         ) {
@@ -112,7 +112,7 @@ export const convertToCorrectType = async (
         };
     }
 
-    if (!type || !allowedTypes.includes(type.mime)) {
+    if (!type || !ALLOWED_TYPES.includes(type.mime)) {
         removeFile(requestFile.path);
         return {
             message: `Uploaded file is of an invalid type: ${

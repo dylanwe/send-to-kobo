@@ -49,7 +49,7 @@ if (existsSync('./uploads')) {
 await mkdirp('uploads');
 
 // start server
-app.listen(PORT);
+app.listen(process.env.PORT || PORT);
 console.log(
-    `⚡️ [Server] - server is listening on port http://localhost:${PORT}`
+    `⚡️ [Server] - server is listening on port http://localhost:${process.env.PORT || PORT}`
 );

@@ -7,7 +7,7 @@ import mkdirp from 'mkdirp';
 import path from 'path';
 import router from './router';
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 export const app = new Koa();
 app.context.keys = new Map();
 app.use(serve('./src/static'));
@@ -49,7 +49,7 @@ if (existsSync('./uploads')) {
 await mkdirp('uploads');
 
 // start server
-app.listen(process.env.PORT || PORT);
+app.listen(PORT);
 console.log(
-    `⚡️ [Server] - server is listening on port http://localhost:${process.env.PORT || PORT}`
+    `⚡️ [Server] - server is listening on port http://localhost:${PORT}`
 );

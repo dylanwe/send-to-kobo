@@ -1,5 +1,4 @@
 # Send to reader
-VIEW LIVE: [send2kobo](https://send2kobo.herokuapp.com/)
 
 ![preview](/img/send-to-kobo.png)
 
